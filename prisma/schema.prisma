@@ -1,0 +1,578 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum documentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                   String              @id @default(uuid()) @map("_id")
+  deviceId             String?
+  email                String?
+  firstName            String?
+  lastName             String?
+  phone                String?
+  mobile               String?
+  googleId             String?
+  businessType         String?
+  avatar               String?
+  profilePhoto         String?
+  coverPhoto           String?
+  isEmailVerified      Boolean             @default(false)
+  isPhoneVerified      Boolean             @default(false)
+  isActive             Boolean             @default(true)
+  role                 UserRole            @default(CUSTOMER)
+  status               UserStatus          @default(PENDING)
+  pinCode              String?
+  city                 String?
+  state                String?
+  address              String?
+  country              String?
+  storeName            String?
+  storeAddress         String?
+  facebookUrl          String?
+  instagramUrl         String?
+  youtubeUrl           String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  resetPasswordExpires DateTime?
+  resetPasswordToken   String?
+  currentOtp           String?
+  otpExpiresAt         DateTime?
+  BankDetails          BankDetails[]
+  ShippingPolicies     ShippingPolicies[]
+  Store                Store[]
+  StoreDocument        StoreDocument[]
+  Zones                Zones[]
+  Product              Product[]
+  savedAddress         savedAddress[]
+  variations           variations[]
+  adminStaffAsUser     AdminStaff[]        @relation("AdminStaffUser")
+  adminStaffAsAdmin    AdminStaff[]        @relation("AdminStaffAdmin")
+  vendorStaffAsUser    VendorStaff[]       @relation("VendorStaffUser")
+  vendorStaffAsVendor  VendorStaff[]       @relation("VendorStaffVendor")
+  userStaff            UserStaff[]         @relation("UserStaffUser")
+  wareHouse            wareHouse[]
+  reviews              reviews[]
+  reviewImpressions    reviewImpressions[]
+  favProducts          favProducts[]
+  mainCart             mainCart[]
+  order                order[]
+  follow               follow[]
+  following            following[]
+
+  @@map("users")
+}
+
+model BankDetails {
+  id          String   @id @default(uuid()) @map("_id")
+  holderName  String
+  accountName String
+  idscCode    String
+  bankName    String
+  branch      String
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model wareHouse {
+  id        String    @id @default(uuid()) @map("_id")
+  name      String
+  address   String
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postCode  String
+  city      String
+  state     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Product   Product[]
+}
+
+model ShippingPolicies {
+  id        String   @id @default(uuid()) @map("_id")
+  userId    String
+  policy    String
+  isCheck   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Zones {
+  id             String           @id @default(uuid()) @map("_id")
+  storeId        String
+  zoneName       String
+  country        String
+  state          String[]
+  restrictedPin  String[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  store          User             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  shippingMethod shippingMethod[]
+}
+
+model shippingMethod {
+  id                   String   @id @default(uuid()) @map("_id")
+  zoneId               String
+  method               String
+  title                String
+  freeShippingRequired String?
+  minimunOrderAmount   String?
+  cost                 Float    @default(0)
+  zone                 Zones    @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model businessType {
+  id        String   @id @default(uuid()) @map("_id")
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StoreDocument {
+  id           String         @id @default(uuid()) @map("_id")
+  storeId      String
+  documentType String
+  status       documentStatus @default(PENDING)
+  fileUrl      String
+  reason       String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  store        User           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+model Store {
+  id           String      @id @default(uuid()) @map("_id")
+  coverImage   String?
+  profileImage String?
+  storeName    String
+  description  String?
+  vendorId     String
+  userName     String
+  returnPolicy String?
+  isShow       Boolean     @default(true)
+  shippingDay  Int?
+  street       String?
+  city         String?
+  state        String?
+  shippingType String      @default("manual")
+  country      String?
+  pinCode      String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  isVerified   Boolean     @default(false)
+  isRejected   Boolean     @default(false)
+  reason       String?
+  vendor       User        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  follow       follow[]
+  following    following[]
+}
+
+model follow {
+  id         String   @id @default(uuid()) @map("_id")
+  followerId String
+  user       User     @relation(fields: [followerId], references: [id])
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  userId     String
+}
+
+model following {
+  id          String   @id @default(uuid()) @map("_id")
+  followingId String
+  user        User     @relation(fields: [followingId], references: [id])
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+}
+
+model savedAddress {
+  id        String   @id @default(uuid()) @map("_id")
+  firstName String
+  lastName  String
+  pinCode   String
+  city      String
+  state     String
+  address   String
+  phone     String
+  email     String?
+  userId    String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_addresses")
+}
+
+model Category {
+  id          String    @id @default(uuid()) @map("_id")
+  name        String    @unique
+  description String?
+  slug        String    @unique
+  image       String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  commission  Float
+  type        String    @default("percentage")
+  Product     Product[]
+
+  @@map("categories")
+}
+
+model DocumentType {
+  id        String   @id @default(uuid()) @map("_id")
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model variations {
+  id                          String                        @id @default(uuid()) @map("_id")
+  name                        String
+  type                        String
+  group                       String
+  isRequire                   String
+  order                       Int
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+  userId                      String
+  categories                  String[]                      @default([])
+  productVeriations           productVeriations[]
+  variationOptions            variationOptions[]
+  user                        User                          @relation(fields: [userId], references: [id])
+  prodcuctVeriationAttributes prodcuctVeriationAttributes[]
+}
+
+model variationOptions {
+  id          String     @id @default(uuid()) @map("_id")
+  variationId String
+  name        String
+  value       String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  variation   variations @relation(fields: [variationId], references: [id])
+}
+
+model shippingProviders {
+  id           String   @id @default(uuid()) @map("_id")
+  providerName String
+  isActive     Boolean  @default(true)
+  prefix       String?
+  trackingUrl  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model order {
+  id              String            @id @default(uuid()) @map("_id")
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id])
+  phone           String
+  firstName       String
+  paymentMethod   String
+  totalAmount     Float
+  bagDiscount     Float
+  couponDiscount  Float
+  shippingFee     Float
+  lastName        String
+  email           String
+  status          OrderStatus       @default(PENDING)
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  shippingAddress shippingAddress[]
+  billingAddress  billingAddress[]
+  orderItems      orderItems[]
+}
+
+model orderItems {
+  id                 String             @id @default(uuid()) @map("_id")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  productId          String
+  product            Product            @relation(fields: [productId], references: [id])
+  quantity           Int
+  productVeriationId String?
+  productVeriation   productVeriations? @relation(fields: [productVeriationId], references: [id])
+  orderId            String
+  order              order              @relation(fields: [orderId], references: [id])
+}
+
+model shippingAddress {
+  id        String   @id @default(uuid()) @map("_id")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  pinCode   String
+  orderId   String
+  order     order    @relation(fields: [orderId], references: [id])
+  city      String
+  state     String
+  address   String
+}
+
+model billingAddress {
+  id        String   @id @default(uuid()) @map("_id")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  pinCode   String
+  orderId   String
+  city      String
+  state     String
+  address   String
+  order     order    @relation(fields: [orderId], references: [id])
+}
+
+model Product {
+  id                String              @id @default(uuid()) @map("_id")
+  vendorId          String
+  categoryId        String
+  productId         String?
+  images            String[]
+  brand             String?
+  name              String
+  sku               String?
+  price             Float
+  discountedPrice   Float?
+  stock             Int                 @default(0)
+  status            ProductStatus       @default(DRAFT)
+  stockStatus       String?             @default("IN_STOCK")
+  adminApproved     Boolean             @default(false)
+  isVisible         Boolean             @default(true)
+  description       String
+  publisedDate      DateTime            @default(now())
+  slug              String              @unique
+  tags              String[]
+  weight            Float?
+  height            String
+  shippingMethod    String?             @default("FREE")
+  RMA               String?
+  width             String
+  length            String
+  createdAt         DateTime            @default(now())
+  warehouseId       String?
+  warehouse         wareHouse?          @relation(fields: [warehouseId], references: [id])
+  updatedAt         DateTime            @updatedAt
+  productVeriations productVeriations[]
+  category          Category            @relation(fields: [categoryId], references: [id])
+  vendor            User                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  specification     specification[]
+  reviews           reviews[]
+  favProducts       favProducts[]
+  mainCart          mainCart[]
+  orderItems        orderItems[]
+
+  @@map("products")
+}
+
+model favProducts {
+  id        String   @id @default(uuid()) @map("_id")
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model mainCart {
+  id                  String             @id @default(uuid()) @map("_id")
+  userId              String
+  productId           String
+  createdAt           DateTime           @default(now())
+  quantity            Int                @default(1)
+  selectedVariationId String?
+  selectedVariation   productVeriations? @relation(fields: [selectedVariationId], references: [id], onDelete: Cascade)
+  updatedAt           DateTime           @updatedAt
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product             Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model reviews {
+  id                 String              @id @default(uuid()) @map("_id")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  productId          String
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId             String
+  impressedCount     Int                 @default(0)
+  notImpressedCount  Int                 @default(0)
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating             Int
+  purchasedVeriation String?
+  comment            String?
+  images             String[]
+  reviewImpressions  reviewImpressions[]
+}
+
+model reviewImpressions {
+  id          String   @id @default(uuid()) @map("_id")
+  reviewId    String
+  userId      String
+  isImpressed Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  review      reviews  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  @@map("review_impressions")
+}
+
+model productVeriations {
+  id                         String                        @id @default(uuid()) @map("_id")
+  name                       String
+  images                     String[]
+  productVeriationAttributes prodcuctVeriationAttributes[]
+  sku                        String
+  discountedPrice            Float?
+  stockStatus                String?
+  status                     String?
+  weight                     Float?
+  height                     String?
+  width                      String?
+  length                     String?
+  shippingMethod             String?
+  price                      Float
+  stock                      Int                           @default(0)
+  productId                  String
+  createdAt                  DateTime                      @default(now())
+  updatedAt                  DateTime                      @updatedAt
+  product                    Product                       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variations                 variations?                   @relation(fields: [variationsId], references: [id])
+  variationsId               String?
+  mainCart                   mainCart[]
+  orderItems                 orderItems[]
+}
+
+model prodcuctVeriationAttributes {
+  id                  String             @id @default(uuid()) @map("_id")
+  key                 String
+  value               String
+  veriationId         String
+  veriation           variations         @relation(fields: [veriationId], references: [id], onDelete: Cascade)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  productVeriations   productVeriations? @relation(fields: [productVeriationsId], references: [id], onDelete: Cascade)
+  productVeriationsId String?
+}
+
+model specification {
+  id        String  @id @default(uuid()) @map("_id")
+  name      String
+  value     String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model AdminStaff {
+  id        String     @id @default(uuid()) @map("_id")
+  userId    String
+  adminId   String
+  firstName String?
+  lastName  String?
+  email     String?
+  phone     String?
+  mobile    String?
+  isActive  Boolean    @default(true)
+  role      UserRole   @default(ADMIN_STAFF)
+  status    UserStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation("AdminStaffUser", fields: [userId], references: [id], onDelete: Cascade)
+  admin     User       @relation("AdminStaffAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_staff")
+}
+
+model VendorStaff {
+  id        String     @id @default(uuid()) @map("_id")
+  userId    String
+  vendorId  String
+  firstName String?
+  lastName  String?
+  email     String?
+  phone     String?
+  mobile    String?
+  isActive  Boolean    @default(true)
+  role      UserRole   @default(VENDOR_STAFF)
+  status    UserStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation("VendorStaffUser", fields: [userId], references: [id], onDelete: Cascade)
+  vendor    User       @relation("VendorStaffVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("vendor_staff")
+}
+
+model UserStaff {
+  id        String     @id @default(uuid()) @map("_id")
+  userId    String
+  firstName String?
+  lastName  String?
+  email     String?
+  phone     String?
+  mobile    String?
+  isActive  Boolean    @default(true)
+  role      UserRole   @default(USER_STAFF)
+  status    UserStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation("UserStaffUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_staff")
+}
+
+enum UserRole {
+  GUEST
+  USER
+  VENDOR_STAFF
+  ADMIN_STAFF
+  CUSTOMER
+  VENDOR
+  ADMIN
+  USER_STAFF
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
+  LIVE
+  REJECTED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  PENDING_REVIEW
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
